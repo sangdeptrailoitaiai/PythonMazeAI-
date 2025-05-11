@@ -79,13 +79,8 @@ class MazeSolver:
         for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             nx, ny = x + dx, y + dy
             neighbor = (nx, ny)
-            if (0 <= ny < len(self.grid) and 0 <= nx < len(self.grid[0]) and
-                self.grid[ny][nx] != 1 and neighbor not in visited):
+            if self.is_valid(nx, ny) and neighbor not in visited:
                 neighbors.append(neighbor)
-                # Kiểm tra 4 điều kiện:
-                # Không vượt biên mê cung.
-                # Không phải tường (grid[ny][nx] != 1).
-                # Chưa được thăm (not in visited).
         return neighbors
 
     def solve_bfs(self, start):
@@ -187,7 +182,7 @@ class MazeSolver:
         if not self.q_table:
             for y in range(self.maze.height):
                 for x in range(self.maze.width):
-                    if self.maze.grid[y][x] == 0:  # Chỉ khởi tạo cho các ô có thể đi được
+                    if self.is_valid(x, y):  # Chỉ khởi tạo cho các ô có thể đi được
                         state = (x, y) #Tạo một trạng thái (state) dạng tọa độ: (x, y).
                         self.q_table[state] = { #Khởi tạo Q-table cho trạng thái state với 4 hành động: UP, DOWN, LEFT, RIGHT.
                             "UP": 0, "DOWN": 0, "LEFT": 0, "RIGHT": 0 #Giá trị ban đầu của Q-table là 0.
@@ -280,13 +275,8 @@ class MazeSolver:
             ]
             random.shuffle(directions)  # Thêm tính ngẫu nhiên
 
-            for _, (nx, ny) in directions:
-                if (0 <= nx < self.maze.width and 
-                    0 <= ny < self.maze.height and 
-                    self.maze.grid[ny][nx] == 0 and 
-                    (nx, ny) not in visited and
-                    (nx, ny) not in self.maze.bombs):
-                    
+            for _, (nx, ny) in directions: #_ đại diện cho phần bạn không cần dùng (tên hướng "UP", "DOWN"...)
+                if self.is_valid(nx, ny) and (nx, ny) not in visited:
                     parent[(nx, ny)] = current
                     if backtrack((nx, ny)):
                         return True
