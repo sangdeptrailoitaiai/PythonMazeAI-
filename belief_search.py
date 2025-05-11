@@ -1,8 +1,9 @@
 from collections import deque
 from maze import Maze
 import pygame
+import time 
 maze = [
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], 
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1], 
     [1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1], 
     [1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1], 
@@ -30,9 +31,9 @@ maze = [
 ]
 
 step_index = 0
-solution = ['UP', 'UP', 'RIGHT', 'RIGHT', 'UP', 'UP', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DOWN', 'DOWN', 'DOWN', 'DOWN', 'RIGHT', 'RIGHT', 'DOWN', 'DOWN', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DOWN', 'DOWN', 'RIGHT', 'RIGHT', 'DOWN', 'DOWN', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DOWN', 'DOWN', 'LEFT', 'LEFT', 'LEFT', 'LEFT', 'DOWN', 'DOWN', 'RIGHT', 'RIGHT', 'DOWN', 'DOWN', 'DOWN', 'DOWN', 'LEFT', 'LEFT', 'UP', 'UP', 'LEFT', 'LEFT', 'LEFT', 'LEFT','DOWN','DOWN','LEFT','LEFT','DOWN','DOWN','RIGHT','RIGHT','RIGHT','RIGHT','DOWN','DOWN','RIGHT','RIGHT','RIGHT','RIGHT','RIGHT','RIGHT','RIGHT','RIGHT','RIGHT','RIGHT','UP','UP','LEFT','LEFT','UP','UP','RIGHT','RIGHT','UP','UP','LEFT','LEFT','UP','UP','UP','UP','UP','UP', 'RIGHT','RIGHT','UP','UP','UP','UP','UP','UP','LEFT','LEFT','UP','UP','RIGHT','RIGHT','RIGHT','RIGHT','RIGHT','RIGHT','DOWN','DOWN','RIGHT','RIGHT','UP','UP','UP','UP','RIGHT','RIGHT','DOWN','DOWN','DOWN','DOWN','DOWN','DOWN', 'RIGHT', 'RIGHT', 'DOWN', 'DOWN', 'DOWN', 'DOWN', 'LEFT', 'LEFT', 'DOWN', 'DOWN', 'RIGHT', 'RIGHT', 'DOWN', 'DOWN', 'LEFT', 'LEFT', 'LEFT', 'LEFT', 'UP', 'UP', 'LEFT', 'LEFT', 'DOWN', 'DOWN', 'DOWN', 'DOWN', 'DOWN', 'DOWN', 'RIGHT', 'RIGHT', 'UP', 'UP', 'RIGHT', 'RIGHT', 'RIGHT', 'RIGHT', 'DOWN', 'DOWN', 	'LEFT' ,'LEFT' ,'DOWN' ,'DOWN' ,'LEFT' ,'LEFT' ,'DOWN' ,'DOWN' ,'RIGHT' ,'RIGHT' ,'RIGHT' ,'RIGHT']
+solution = []
 # Các trạng thái ban đầu (ẩn danh)
-start_states = {(1, 1), (33, 1), (1, 23)}
+start_states = {(1, 1), (33, 1), (1, 23)} 
 goal = (35-2, 25-2)
 
 import pygame
@@ -160,37 +161,85 @@ def move_state(pos, action):
     dx, dy = moves[action]
     return (x + dx, y + dy)
 
-# Thuật toán chính
+# Kiểm tra tính hợp lệ của start states
+def validate_start_states(start_states, maze):
+    valid_states = set()
+    for state in start_states:
+        if is_valid(*state, maze):
+            valid_states.add(state)
+    return valid_states
+
+# Cải thiện hàm search_no_observation
 def search_no_observation(start_states, goal, maze):
-    queue = deque()
+    # Kiểm tra tính hợp lệ của goal state
+    if not is_valid(*goal, maze):
+        return None
+        
+    # Kiểm tra tính hợp lệ của start states
+    valid_start_states = validate_start_states(start_states, maze)
+    if not valid_start_states:
+        return None
+        
+    # Tối ưu: Sử dụng set thay vì list cho visited để tìm kiếm nhanh hơn
     visited = set()
+    queue = deque([(valid_start_states, [])])
     
-    queue.append((start_states, []))
+    # Tối ưu: Lưu trữ các trạng thái đã thăm dưới dạng frozenset
+    visited.add(frozenset(valid_start_states))
+    
+    # Tối ưu: Định nghĩa moves một lần duy nhất
+    moves = {
+        "UP": (0, -1),
+        "DOWN": (0, 1),
+        "LEFT": (-1, 0),
+        "RIGHT": (1, 0)
+    }
     
     while queue:
         current_states, path = queue.popleft()
-        frozen = frozenset(current_states)
-        if frozen in visited:
-            continue
-        visited.add(frozen)
-
+        
+        # Tối ưu: Kiểm tra goal state trước khi xử lý các hành động
         if all(state == goal for state in current_states):
-            return path  # tất cả đã đến đích
+            return path
 
+        # Tối ưu: Sắp xếp các hành động theo ưu tiên (hướng về goal)
+        actions = []
         for action in ["UP", "DOWN", "LEFT", "RIGHT"]:
+            dx, dy = moves[action]
+            # Tính khoảng cách trung bình đến goal sau khi thực hiện hành động
+            avg_distance = sum(abs(state[0] + dx - goal[0]) + abs(state[1] + dy - goal[1]) 
+                             for state in current_states) / len(current_states)
+            actions.append((action, avg_distance))
+        
+        # Sắp xếp các hành động theo khoảng cách trung bình đến goal
+        actions.sort(key=lambda x: x[1])
+        
+        for action, _ in actions:
             next_states = set()
             for state in current_states:
                 next_state = move_state(state, action)
                 if is_valid(*next_state, maze):
                     next_states.add(next_state)
                 else:
-                    next_states.add(state)  # đụng tường thì đứng yên
-            queue.append((next_states, path + [action]))
+                    next_states.add(state)
+            
+            # Tối ưu: Chỉ thêm vào queue nếu trạng thái mới chưa được thăm
+            frozen_next = frozenset(next_states)
+            if frozen_next not in visited:
+                visited.add(frozen_next)
+                queue.append((next_states, path + [action]))
     
-    return None  # không tìm được đường đi
+    return None
 
 def run_algorithm():
+    start_time = time.time()
+    print(f"Số lượng trạng thái ban đầu: {len(start_states)}")
+    print("Các trạng thái ban đầu:", start_states)
     solution = search_no_observation(start_states, goal, maze)
+    end_time = time.time()
+    execution_time = end_time - start_time
+    print(f"Thời gian tìm đường đi: {execution_time:.2f} giây")
+    return solution
 
 # Khởi tạo pygame
 WIDTH, HEIGHT = 1200, 800
@@ -207,8 +256,6 @@ maze1.bombs = set()
 runing = True
 # Tạo đối tượng Player
 player1 = Player(maze1, 1, 1)
-
-
 
 while runing:
     timer.tick(60)
@@ -230,19 +277,16 @@ while runing:
                 if direction:
                     player1.move(direction)
 
-
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:
-                    print("Đường đi tìm được:")
-                    solution = search_no_observation(start_states, goal, maze)
+                    print("Đang tìm đường đi...")
+                    solution = run_algorithm()
                     print("Đường đi tìm được:")
                     print(solution)
             
-    if step_index < len(solution):
+    if step_index < len(solution) if solution else 0:
         player1.move(solution[step_index])
-
         step_index += 1
-                
         pygame.time.delay(80)
 
     maze1.draw_maze(screen)
