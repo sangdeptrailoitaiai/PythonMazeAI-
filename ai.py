@@ -1,13 +1,8 @@
 from collections import deque
 from queue import PriorityQueue
 from maze import Maze
-import logging
 import random
 import math
-
-# Cấu hình logging
-logging.basicConfig(level=logging.INFO,
-                   format='%(asctime)s - %(levelname)s - %(message)s')
 
 class MazeSolver:
     """Class giải quyết mê cung sử dụng các thuật toán tìm kiếm khác nhau."""
@@ -98,7 +93,6 @@ class MazeSolver:
             list: Danh sách các bước đi đến đích
         """
         if self.goal is None:
-            logging.error("Goal position not set")
             return []
 
         queue = deque()
@@ -119,8 +113,6 @@ class MazeSolver:
                 parent[neighbor] = current
 
         path = self.reconstruct_path(parent, start)
-        if not path:
-            logging.warning("No path found using BFS")
         return path
 
     def solve_a_star(self, start):
@@ -182,15 +174,7 @@ class MazeSolver:
                     if neighbor not in closed_set:
                         open_set.put((f_score[neighbor], neighbor))
 
-        logging.warning("No path found using A*")
         return []
-
-    def solve_steepest_ascent_hill_climbing(self, start):
-        """
-        Giải mê cung bằng thuật toán Steepest Ascent Hill Climbing.
-        """
-        logging.warning("Steepest Ascent Hill Climbing is deprecated. Using A* instead.")
-        return self.solve_a_star(start)
 
     def solve_q_learning(self, start):
         """
@@ -332,7 +316,6 @@ class MazeSolver:
         while current != start:
             prev = parent.get(current)
             if not prev:
-                logging.error("Path reconstruction failed - missing parent")
                 return []
             dx = current[0] - prev[0]
             dy = current[1] - prev[1]
