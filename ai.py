@@ -46,6 +46,7 @@ class MazeSolver:
         """
         # Khoảng cách Manhattan đến đích
         manhattan_dist = abs(pos[0] - self.goal[0]) + abs(pos[1] - self.goal[1])
+        #Ước lượng khoảng cách từ pos đến goal bằng tổng khoảng cách ngang + dọc.
         
         # Phạt cho các ô gần bom
         bomb_penalty = 0
@@ -59,7 +60,8 @@ class MazeSolver:
         if pos in self.visited_positions:
             visited_penalty = 2
             
-        return manhattan_dist + bomb_penalty + visited_penalty
+        return manhattan_dist + bomb_penalty + visited_penalty 
+    # Trả về tổng khoảng cách Manhattan đến đích + phạt cho các ô gần bom + phạt cho các ô đã thăm.
 
     def get_neighbors(self, node, visited):
         """
@@ -73,13 +75,17 @@ class MazeSolver:
             list: Danh sách các vị trí lân cận hợp lệ
         """
         neighbors = []
-        x, y = node
+        x, y = node #Tách node thành tọa độ x, y.
         for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             nx, ny = x + dx, y + dy
             neighbor = (nx, ny)
             if (0 <= ny < len(self.grid) and 0 <= nx < len(self.grid[0]) and
                 self.grid[ny][nx] != 1 and neighbor not in visited):
                 neighbors.append(neighbor)
+                # Kiểm tra 4 điều kiện:
+                # Không vượt biên mê cung.
+                # Không phải tường (grid[ny][nx] != 1).
+                # Chưa được thăm (not in visited).
         return neighbors
 
     def solve_bfs(self, start):
@@ -95,25 +101,25 @@ class MazeSolver:
         if self.goal is None:
             return []
 
-        queue = deque()
-        visited = set()
-        parent = {}
+        queue = deque() # hàng đợi
+        visited = set() # Lưu các ô đã đi qua để không duyệt lại.
+        parent = {} # Lưu đường đi để truy ngược từ goal về start.
 
-        queue.append(start)
-        visited.add(start)
+        queue.append(start) # thêm vị trí bắt đầu vào hàng đợi
+        visited.add(start) # đánh dấu đã đi qua.
 
-        while queue:
-            current = queue.popleft()
-            if current == self.goal:
+        while queue: # duyệt hàng đợi
+            current = queue.popleft() #Lấy ô đầu hàng đợi (current)
+            if current == self.goal: # nếu đạt đích thì dừng
                 break
 
-            for neighbor in self.get_neighbors(current, visited):
-                queue.append(neighbor)
-                visited.add(neighbor)
-                parent[neighbor] = current
+            for neighbor in self.get_neighbors(current, visited): # duyệt các ô lân cận
+                queue.append(neighbor) # thêm vào hàng đợi
+                visited.add(neighbor) # đánh dấu đã đi qua
+                parent[neighbor] = current # lưu đường đi
 
-        path = self.reconstruct_path(parent, start)
-        return path
+        path = self.reconstruct_path(parent, start) # tái tạo đường đi
+        return path # trả về đường đi
 
     def solve_a_star(self, start):
         """
@@ -125,6 +131,9 @@ class MazeSolver:
         Returns:
             list: Danh sách các bước đi đến đích
         """
+        #f(n) = g(n) + h(n)
+        #g(n) là chi phí đi từ start đến n.
+        #h(n) là ước lượng khoảng cách từ n đến goal.
         if start == self.goal:
             return []
 
@@ -137,42 +146,27 @@ class MazeSolver:
         closed_set = set()  # Tập các node đã xét
         self.visited_positions.clear()  # Xóa các vị trí đã thăm trước khi bắt đầu tìm kiếm mới
 
-        while not open_set.empty():
+        while not open_set.empty(): # duyệt hàng đợi
             current = open_set.get()[1]  # Lấy node có f_score nhỏ nhất
             self.visited_positions.add(current)  # Thêm vào tập các vị trí đã thăm
 
             if current == self.goal:
                 # Tìm thấy đường đi, tái tạo đường đi
-                path = []
-                while current in came_from:
-                    prev = came_from[current]
-                    dx = current[0] - prev[0]
-                    dy = current[1] - prev[1]
-                    if dx == 1:
-                        path.append("RIGHT")
-                    elif dx == -1:
-                        path.append("LEFT")
-                    elif dy == 1:
-                        path.append("DOWN")
-                    elif dy == -1:
-                        path.append("UP")
-                    current = prev
-                path.reverse()
-                return path
+                return self.reconstruct_path(came_from, start)
 
-            closed_set.add(current)
+            closed_set.add(current) #Nếu chưa đến đích, thêm current vào closed_set để không xét lại sau này.
 
             # Xét các node lân cận
             for neighbor in self.get_neighbors(current, closed_set):
-                tentative_g_score = g_score[current] + 1
+                tentative_g_score = g_score[current] + 1 #Tính thử chi phí đi đến neighbor qua current
 
                 if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
                     # Tìm thấy đường đi tốt hơn
-                    came_from[neighbor] = current
-                    g_score[neighbor] = tentative_g_score
-                    f_score[neighbor] = tentative_g_score + self.heuristic(neighbor)
-                    if neighbor not in closed_set:
-                        open_set.put((f_score[neighbor], neighbor))
+                    came_from[neighbor] = current  # lưu đường đi để tái tạo
+                    g_score[neighbor] = tentative_g_score #Cập nhật chi phí thực tế đã đi
+                    f_score[neighbor] = tentative_g_score + self.heuristic(neighbor) #Tính tổng chi phí dự kiến
+                    if neighbor not in closed_set: #Nếu neighbor chưa được xét
+                        open_set.put((f_score[neighbor], neighbor)) #Thêm vào hàng đợi ưu tiên
 
         return []
 
@@ -194,15 +188,15 @@ class MazeSolver:
             for y in range(self.maze.height):
                 for x in range(self.maze.width):
                     if self.maze.grid[y][x] == 0:  # Chỉ khởi tạo cho các ô có thể đi được
-                        state = (x, y)
-                        self.q_table[state] = {
-                            "UP": 0, "DOWN": 0, "LEFT": 0, "RIGHT": 0
+                        state = (x, y) #Tạo một trạng thái (state) dạng tọa độ: (x, y).
+                        self.q_table[state] = { #Khởi tạo Q-table cho trạng thái state với 4 hành động: UP, DOWN, LEFT, RIGHT.
+                            "UP": 0, "DOWN": 0, "LEFT": 0, "RIGHT": 0 #Giá trị ban đầu của Q-table là 0.
                         }
 
         # Huấn luyện Q-learning
-        for episode in range(1000):  # Số episode huấn luyện
-            state = start
-            while state != self.goal:
+        for episode in range(1000):  # Lặp qua trình học 1000 lần, Mỗi lần gọi là một episode – tức là một lần chạy từ đầu (start) đến goal (hoặc bị kẹt).
+            state = start #Bắt đầu từ vị trí start.
+            while state != self.goal: #Duyệt tới khi đạt đích.
                 # Chọn hành động theo epsilon-greedy
                 if random.random() < self.epsilon:
                     action = random.choice(["UP", "DOWN", "LEFT", "RIGHT"])
@@ -235,7 +229,7 @@ class MazeSolver:
                 state = next_state
 
         # Tìm đường đi tốt nhất
-        path = []
+        parent = {}
         state = start
         visited = set()
 
@@ -246,12 +240,13 @@ class MazeSolver:
                     "UP": 0, "DOWN": 0, "LEFT": 0, "RIGHT": 0
                 }
             action = max(self.q_table[state].items(), key=lambda x: x[1])[0]
-            path.append(action)
-            state = self.move_state(state, action)
-            if not self.is_valid(*state):
+            next_state = self.move_state(state, action)
+            if not self.is_valid(*next_state):
                 break
+            parent[next_state] = state
+            state = next_state
 
-        return path if state == self.goal else []
+        return self.reconstruct_path(parent, start) if state == self.goal else []
 
     def solve_backtracking(self, start):
         """
@@ -266,9 +261,12 @@ class MazeSolver:
         if start == self.goal:
             return []
 
-        def backtrack(current, visited, path):
+        parent = {}
+        visited = set()
+
+        def backtrack(current):
             if current == self.goal:
-                return path
+                return True
 
             visited.add(current)
             x, y = current
@@ -282,23 +280,24 @@ class MazeSolver:
             ]
             random.shuffle(directions)  # Thêm tính ngẫu nhiên
 
-            for direction, (nx, ny) in directions:
+            for _, (nx, ny) in directions:
                 if (0 <= nx < self.maze.width and 
                     0 <= ny < self.maze.height and 
                     self.maze.grid[ny][nx] == 0 and 
                     (nx, ny) not in visited and
                     (nx, ny) not in self.maze.bombs):
                     
-                    result = backtrack((nx, ny), visited, path + [direction])
-                    if result:
-                        return result
+                    parent[(nx, ny)] = current
+                    if backtrack((nx, ny)):
+                        return True
 
             visited.remove(current)
-            return None
+            return False
 
         # Bắt đầu backtracking
-        result = backtrack(start, set(), [])
-        return result if result else []
+        if backtrack(start):
+            return self.reconstruct_path(parent, start)
+        return []
 
     def reconstruct_path(self, parent, start):
         """
@@ -388,20 +387,25 @@ class MazeSolver:
             from collections import deque
             visited = set()
             queue = deque()
-            queue.append((start, []))
+            parent = {}
+            queue.append(start)
+            visited.add(start)
+            
             while queue:
-                pos, path = queue.popleft()
+                pos = queue.popleft()
                 if pos == self.goal:
-                    return path
-                visited.add(pos)
+                    return self.reconstruct_path(parent, start)
+                
                 neighbors = []
                 for dx, dy, direction in [(-1, 0, "LEFT"), (1, 0, "RIGHT"), (0, -1, "UP"), (0, 1, "DOWN")]:
                     nx, ny = pos[0] + dx, pos[1] + dy
                     if self.is_valid(nx, ny) and (nx, ny) not in visited:
-                        neighbors.append(((nx, ny), direction))
+                        neighbors.append((nx, ny))
                 random.shuffle(neighbors)
-                for next_pos, direction in neighbors:
-                    queue.append((next_pos, path + [direction]))
+                for next_pos in neighbors:
+                    queue.append(next_pos)
+                    visited.add(next_pos)
+                    parent[next_pos] = pos
             return []
 
         def follow_path(pos, path):
@@ -464,20 +468,25 @@ class MazeSolver:
                     from collections import deque
                     visited = set()
                     queue = deque()
-                    queue.append((pos, []))
+                    parent = {}
+                    queue.append(pos)
+                    visited.add(pos)
+                    
                     while queue:
-                        p, pth = queue.popleft()
+                        p = queue.popleft()
                         if p == self_for_sa.goal:
-                            return pth
-                        visited.add(p)
+                            return self_for_sa.reconstruct_path(parent, pos)
+                        
                         neighbors = []
                         for dx, dy, direction in [(-1, 0, "LEFT"), (1, 0, "RIGHT"), (0, -1, "UP"), (0, 1, "DOWN")]:
                             nx, ny = p[0] + dx, p[1] + dy
                             if self_for_sa.is_valid(nx, ny) and (nx, ny) not in visited:
-                                neighbors.append(((nx, ny), direction))
+                                neighbors.append((nx, ny))
                         random.shuffle(neighbors)
-                        for next_pos, direction in neighbors:
-                            queue.append((next_pos, pth + [direction]))
+                        for next_pos in neighbors:
+                            queue.append(next_pos)
+                            visited.add(next_pos)
+                            parent[next_pos] = p
                     return []
                 new_tail = random_path_from(pos)
                 if not new_tail:
@@ -492,10 +501,7 @@ class MazeSolver:
                         best_path = current_path.copy()
                         best_energy = current_energy
             current_temp *= alpha
-        # Đảm bảo best_path thực sự đến đích
-        if follow_path(start, best_path) == self.goal:
-            return best_path
-        return []
+        return best_path if follow_path(start, best_path) == self.goal else []
 
 
 
