@@ -399,14 +399,7 @@ def run_game(mode):
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if next_btn.collidepoint(mx, my):
                         # Reset game state
-                        if selected_difficulty == "easy":
-                            maze = Maze(35, 25)
-                        elif selected_difficulty == "medium":
-                            maze = Maze(40, 30)
-                        else:
-                            maze = Maze(45, 35)
-                        player = Player(maze)
-                        solver.set_maze(maze)
+                        player = Player(maze)  # Tạo người chơi mới với mê cung hiện tại
                         solution.clear()
                         step_index = 0
                         selected_algorithm = None
