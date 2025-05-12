@@ -256,6 +256,8 @@ maze1.bombs = set()
 runing = True
 # Tạo đối tượng Player
 player1 = Player(maze1, 1, 1)
+player2 = Player(maze1, 33, 1)
+player3 = Player(maze1, 1, 23)
 
 while runing:
     timer.tick(60)
@@ -276,6 +278,8 @@ while runing:
 
                 if direction:
                     player1.move(direction)
+                    player2.move(direction)
+                    player3.move(direction)
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:
@@ -286,11 +290,15 @@ while runing:
             
     if step_index < len(solution) if solution else 0:
         player1.move(solution[step_index])
+        player2.move(solution[step_index])
+        player3.move(solution[step_index])
         step_index += 1
         pygame.time.delay(80)
 
     maze1.draw_maze(screen)
     player1.draw()
+    player2.draw()
+    player3.draw()
 
     pygame.display.flip()
 

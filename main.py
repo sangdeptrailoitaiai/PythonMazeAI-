@@ -184,9 +184,19 @@ def run_game(mode):
     menu_btn = pygame.Rect(WIDTH - 190, 370, 180, 50)
     reload_btn2 = pygame.Rect(WIDTH - 190, 300, 180, 60)
     menu_btn2 = pygame.Rect(WIDTH - 190, 370, 180, 50)
+    info_btn = pygame.Rect(WIDTH - 190, 440, 180, 50)  # Thêm nút Info
+    info_open = False  # Biến kiểm tra trạng thái mở/đóng của info panel
 
     running = True
     submenu_open = False
+    # Dictionary lưu thông tin của các thuật toán
+    algorithm_info = {
+        "BFS": {"time": 0, "steps": 0, "used": False},
+        "A*": {"time": 0, "steps": 0, "used": False},
+        "Q-learning": {"time": 0, "steps": 0, "used": False},
+        "Backtracking": {"time": 0, "steps": 0, "used": False},
+        "Simulated Annealing": {"time": 0, "steps": 0, "used": False}
+    }
     while running:
         timer.tick(60)
         screen.blit(image_bg, (0, 0))
@@ -287,8 +297,13 @@ def run_game(mode):
                     has_started = False
                     won = False
                     ai_plan_time = None
+                    # Reset thông tin các thuật toán
+                    for algo in algorithm_info:
+                        algorithm_info[algo] = {"time": 0, "steps": 0, "used": False}
                 elif menu_btn2.collidepoint(mx, my):
                     return
+                elif info_btn.collidepoint(mx, my):
+                    info_open = not info_open
 
                 elif combo_rect.collidepoint(mx, my):
                     combo_open = not combo_open
@@ -309,6 +324,10 @@ def run_game(mode):
                             elif name == "Simulated Annealing":
                                 solution = solver.solve_simulated_annealing((player.x, player.y))
                             ai_plan_time = round(time.perf_counter() - start, 4)
+                            # Cập nhật thông tin thuật toán
+                            algorithm_info[name]["time"] = ai_plan_time
+                            algorithm_info[name]["steps"] = len(solution)
+                            algorithm_info[name]["used"] = True
                             step_index = 0
                             combo_open = False
                             break
@@ -335,6 +354,7 @@ def run_game(mode):
         if mode == "ai" and not won:
             draw_button(reload_btn2, "Change Maze", (200, 255, 200))
             draw_button(menu_btn2, "Menu", (255, 200, 200))
+            draw_button(info_btn, "Info", (200, 200, 255))  # Vẽ nút Info
 
             # Vẽ combobox chọn thuật toán
             pygame.draw.rect(screen, (255, 255, 255), combo_rect)
@@ -352,6 +372,34 @@ def run_game(mode):
                     pygame.draw.rect(screen, (0, 0, 0), option_rect, 1)
                     text_surface = small_font.render(name, True, (0, 0, 0))
                     screen.blit(text_surface, (option_rect.x + 10, option_rect.y + 10))
+
+            # Vẽ panel thông tin khi info_open = True
+            if info_open:
+                info_panel = pygame.Rect(WIDTH - 400, 100, 380, 700)
+                pygame.draw.rect(screen, (255, 255, 255), info_panel)
+                pygame.draw.rect(screen, (0, 0, 0), info_panel, 2)
+                
+                # Tiêu đề
+                title = small_font.render("Algorithm Information", True, (0, 0, 0))
+                screen.blit(title, (info_panel.x + 10, info_panel.y + 10))
+                
+                # Vẽ thông tin từng thuật toán
+                y_offset = 50
+                for algo in search_algorithms:
+                    info = algorithm_info[algo]
+                    if info["used"]:
+                        algo_text = small_font.render(f"{algo}:", True, (0, 0, 0))
+                        time_text = small_font.render(f"Time: {info['time']:.4f}s", True, (0, 0, 0))
+                        steps_text = small_font.render(f"Steps: {info['steps']}", True, (0, 0, 0))
+                        
+                        screen.blit(algo_text, (info_panel.x + 20, info_panel.y + y_offset))
+                        screen.blit(time_text, (info_panel.x + 40, info_panel.y + y_offset + 25))
+                        screen.blit(steps_text, (info_panel.x + 40, info_panel.y + y_offset + 50))
+                        y_offset += 90
+                    else:
+                        algo_text = small_font.render(f"{algo}: Not used yet", True, (128, 128, 128))
+                        screen.blit(algo_text, (info_panel.x + 20, info_panel.y + y_offset))
+                        y_offset += 40
 
         if ai_plan_time is not None:
             ai_time_text = small_font.render(f"AI Plan Time: {ai_plan_time:.4f}s", True, BLACK)
