@@ -241,33 +241,53 @@ def run_algorithm():
     print(f"Thời gian tìm đường đi: {execution_time:.2f} giây")
     return solution
 
-# Khởi tạo pygame
-WIDTH, HEIGHT = 1200, 800
-WHITE, BLACK = (255, 255, 255), (0, 0, 0)
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-timer = pygame.time.Clock()
+def run_blind_ai():
+    # Khởi tạo pygame và các biến liên quan
+    pygame.init()
+    WIDTH, HEIGHT = 1200, 800
+    WHITE, BLACK = (255, 255, 255), (0, 0, 0)
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    timer = pygame.time.Clock()
+    image_bg = pygame.image.load('image/background.png')
+    image_bg = pygame.transform.scale(image_bg, (WIDTH, HEIGHT))
 
-image_bg = pygame.image.load('image/background.png')
-image_bg = pygame.transform.scale(image_bg, (WIDTH, HEIGHT))
+    maze1 = Maze(35, 25)
+    maze1.grid = maze 
+    maze1.bombs = set()
+    player1 = Player(maze1, 1, 1)
+    player2 = Player(maze1, 33, 1)
+    player3 = Player(maze1, 1, 23)
 
-maze1 = Maze(35, 25)
-maze1.grid = maze 
-maze1.bombs = set()
-runing = True
-# Tạo đối tượng Player
-player1 = Player(maze1, 1, 1)
-player2 = Player(maze1, 33, 1)
-player3 = Player(maze1, 1, 23)
+    menu_btn = pygame.Rect(WIDTH - 190, 30, 180, 50)
+    font = pygame.font.SysFont('arial', 24)
+    step_index = 0
+    solution = None
+    running = True
 
-while runing:
-    timer.tick(60)
-    screen.blit(image_bg, (0, 0))
-    mx, my = pygame.mouse.get_pos()
+    while running:
+        timer.tick(60)
+        screen.blit(image_bg, (0, 0))
+        mx, my = pygame.mouse.get_pos()
 
-    for event in pygame.event.get():
+        # Vẽ nút menu
+        pygame.draw.rect(screen, (255, 200, 200), menu_btn)
+        pygame.draw.rect(screen, BLACK, menu_btn, 2)
+        menu_text = font.render("Menu", True, BLACK)
+        screen.blit(menu_text, (menu_btn.x + (menu_btn.width - menu_text.get_width()) // 2,
+                               menu_btn.y + (menu_btn.height - menu_text.get_height()) // 2))
+
+        for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 exit()
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if menu_btn.collidepoint(mx, my):
+                    running = False
+                    pygame.quit()
+                    import main
+                    main.show_menu()
+                    return
 
             if event.type == pygame.KEYDOWN:
                 direction = None
@@ -281,27 +301,27 @@ while runing:
                     player2.move(direction)
                     player3.move(direction)
 
-            if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:
                     print("Đang tìm đường đi...")
                     solution = run_algorithm()
                     print("Đường đi tìm được:")
                     print(solution)
-            
-    if step_index < len(solution) if solution else 0:
-        player1.move(solution[step_index])
-        player2.move(solution[step_index])
-        player3.move(solution[step_index])
-        step_index += 1
-        pygame.time.delay(80)
+        
+        if step_index < len(solution) if solution else 0:
+            player1.move(solution[step_index])
+            player2.move(solution[step_index])
+            player3.move(solution[step_index])
+            step_index += 1
+            pygame.time.delay(80)
 
-    maze1.draw_maze(screen)
-    player1.draw()
-    player2.draw()
-    player3.draw()
+        maze1.draw_maze(screen)
+        player1.draw()
+        player2.draw()
+        player3.draw()
 
-    pygame.display.flip()
+        pygame.display.flip()
 
+# XÓA HOẶC COMMENT TOÀN BỘ GAME LOOP Ở NGOÀI HÀM!
+# if __name__ == "__main__":
+#     run_blind_ai()
 
-# print("Đường đi tìm được:")
-# print( search_no_observation(start_states, goal, maze))

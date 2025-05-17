@@ -50,9 +50,9 @@ def show_menu():
     button_width, button_height = 300, 70
     play_btn = pygame.Rect(WIDTH//2 - 150, HEIGHT//2 - 60, button_width, button_height)
     ai_btn = pygame.Rect(WIDTH//2 - 150, HEIGHT//2 + 60, button_width, button_height)
-    # Thêm 2 nút mới
-    intro_btn = pygame.Rect(WIDTH // 2 - 150, HEIGHT // 2 + 180, 300, 60)
-    howto_btn = pygame.Rect(WIDTH // 2 - 150, HEIGHT // 2 + 260, 300, 60)
+    blind_ai_btn = pygame.Rect(WIDTH//2 - 150, HEIGHT//2 + 180, button_width, button_height)  # New button
+    intro_btn = pygame.Rect(WIDTH // 2 - 150, HEIGHT // 2 + 300, 300, 60)
+    howto_btn = pygame.Rect(WIDTH // 2 - 150, HEIGHT // 2 + 380, 300, 60)
 
     while True:
         screen.blit(image_bg, (0, 0))
@@ -78,6 +78,7 @@ def show_menu():
         # Vẽ menu chơi với hiệu ứng hover
         draw_button(play_btn, "Player", (200, 255, 200), play_btn.collidepoint(mx, my))
         draw_button(ai_btn, "AI", (200, 200, 255), ai_btn.collidepoint(mx, my))
+        draw_button(blind_ai_btn, "Blind AI", (255, 200, 200), blind_ai_btn.collidepoint(mx, my))  # New button
         draw_button(intro_btn, "Introduction", (255, 255, 180), intro_btn.collidepoint(mx, my))
         draw_button(howto_btn, "How to Play", (180, 255, 255), howto_btn.collidepoint(mx, my))
 
@@ -101,6 +102,8 @@ def show_menu():
                     return "player"
                 elif ai_btn.collidepoint(mx, my):
                     return "ai"
+                elif blind_ai_btn.collidepoint(mx, my):  # New button handler
+                    return "blind_ai"
                 elif intro_btn.collidepoint(mx, my):
                     show_popup("Introduction",
                                "This is a maze solving game.\nYou can play manually or use AI.\nYour goal is to reach the red square!")
@@ -151,6 +154,10 @@ def run_game(mode):
         pygame.mixer.music.load("image/player_mode.mp3")
     elif mode == "ai":
         pygame.mixer.music.load("image/ai_mode.mp3")
+    elif mode == "blind_ai":
+        import belief_search
+        belief_search.run_blind_ai()
+        return
 
     pygame.mixer.music.set_volume(0.5)
     pygame.mixer.music.play(-1)
